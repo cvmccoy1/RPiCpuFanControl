@@ -2,10 +2,10 @@
 
 import threading
 import tkinter as tk
-from time import sleep
+from time import monotonic, sleep
 
 import RPi.GPIO as GPIO
-from gpiozero import CPUTemperature, exc
+from gpiozero import CPUTemperature
 from simple_pid import PID
 
 TACH_PIN = 17
@@ -14,7 +14,9 @@ FAN_PWM_FEQUENCY = 1000
 
 DESIRED_TEMPERATURE = 35  # In celsius
 
-degree_sign = u"\N{DEGREE SIGN}"
+degree_sign = "℃"
+up_arrow = "▲"
+down_arrow = "▼"
 
 def TachFallingEdgeDetectedEvent(n):
     global tach_counter
@@ -45,19 +47,21 @@ def controlLoop():
 
     global is_running
     while is_running:
-      
-        sleep(1)
-        currentTemperature = cpu.temperature
-        #print(f'Temperature = {currentTemperature:.2f}' + degree_sign + 'C')
-        lbl_temperature["text"] = f'Temperature = {currentTemperature:.2f}' + degree_sign + 'C'
+        begin_time = monotonic()
+        current_tach_counter = tach_counter
+        tach_counter = 0
+
+        current_temperature = cpu.temperature
+        lbl_temperature["text"] = f'Temperature = {current_temperature:.2f}' + degree_sign
+
         pid.setpoint = DESIRED_TEMPERATURE
-        fan_duty_cycle = pid(currentTemperature)
-        #print(f'Duty Cycle = {fan_duty_cycle:.0f}%')
+        fan_duty_cycle = pid(current_temperature)
         lbl_duty_cycle["text"] = f'Duty Cycle = {fan_duty_cycle:.0f}%'
         pwm.ChangeDutyCycle(fan_duty_cycle)
-        #print(f'RPMs = {tach_counter * 30:d} rpm')
-        lbl_rpm["text"] = f'RPMs = {tach_counter * 30:d} rpm'
-        tach_counter = 0  
+        lbl_rpm["text"] = f'RPMs = {current_tach_counter * 30:d} rpm'
+
+        sleep_time = 1.0 - (monotonic() - begin_time)
+        sleep(sleep_time)
 
     GPIO.remove_event_detect(TACH_PIN)
     GPIO.cleanup()
@@ -76,26 +80,22 @@ def decrease():
     displaySetPoint(DESIRED_TEMPERATURE)
 
 def displaySetPoint(setpoint: int):
-    lbl_setpoint["text"] = f'Set Point = {setpoint:d}' + degree_sign + 'C'
+    lbl_setpoint["text"] = f'Set Point = {setpoint:d}' + degree_sign
 
 if __name__ == "__main__":
-    is_running = True
-    controlLoopThread = threading.Thread(target=controlLoop)
-    controlLoopThread.start()
-
     try:
         mywindow = tk.Tk()
         mywindow.title('Fan Control')
         #mywindow.geometry('50x16+0+36')
         global lbl_setpoint
-        lbl_setpoint = tk.Label(text=f'Set Point = {DESIRED_TEMPERATURE:d}' + degree_sign + 'C', font=("Arial 14 bold"))
+        lbl_setpoint = tk.Label(text=f'Set Point = {DESIRED_TEMPERATURE:d}' + degree_sign, font=("Arial 14 bold"))
         lbl_setpoint.pack()
 
-        btn_decrease = tk.Button(master=mywindow, text="-", command=decrease)
+        btn_decrease = tk.Button(master=mywindow, text=down_arrow, command=decrease)
         #btn_decrease.grid(row=0, column=0, sticky="nsew")
         btn_decrease.pack()
 
-        btn_increase = tk.Button(master=mywindow, text="+", command=increase)
+        btn_increase = tk.Button(master=mywindow, text=up_arrow, command=increase)
         #btn_increase.grid(row=0, column=2, sticky="nsew")
         btn_increase.pack()
 
@@ -110,6 +110,11 @@ if __name__ == "__main__":
         lbl_rpm.pack()
         #tk.Button(text="quit", font=('Courier', 18), command=quit).pack()
         #mywindow.overrideredirect(1)
+
+        is_running = True
+        controlLoopThread = threading.Thread(target=controlLoop)
+        controlLoopThread.start()
+
         mywindow.mainloop()
         print('Finished')
     except KeyboardInterrupt:
