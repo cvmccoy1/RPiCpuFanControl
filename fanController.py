@@ -14,6 +14,8 @@ FAN_PWM_FEQUENCY = 1000
 
 DESIRED_TEMPERATURE = 35  # In celsius
 
+degree_sign = u"\N{DEGREE SIGN}"
+
 def TachFallingEdgeDetectedEvent(n):
     global tach_counter
     tach_counter += 1 
@@ -38,19 +40,20 @@ def controlLoop():
     # Attach the Tach Falling Edge Event method
     GPIO.add_event_detect(TACH_PIN, GPIO.FALLING, TachFallingEdgeDetectedEvent)
 
-    degree_sign = u"\N{DEGREE SIGN}"
-
     global is_running
     while is_running:
         global tach_counter
         tach_counter = 0        
         sleep(1)
         currentTemperature = cpu.temperature
-        print(f'Temperature = {currentTemperature:.2f}' + degree_sign + 'C')
+        #print(f'Temperature = {currentTemperature:.2f}' + degree_sign + 'C')
+        lbl_temperature["text"] = f'Temperature = {currentTemperature:.2f}' + degree_sign + 'C'
         fan_duty_cycle = pid(currentTemperature)
-        print(f'Duty Cycle = {fan_duty_cycle:.0f}%')
+        #print(f'Duty Cycle = {fan_duty_cycle:.0f}%')
+        lbl_duty_cycle["text"] = f'Duty Cycle = {fan_duty_cycle:.0f}%'
         pwm.ChangeDutyCycle(fan_duty_cycle)
-        print(f'RPMs = {tach_counter * 30:d} rpm')
+        #print(f'RPMs = {tach_counter * 30:d} rpm')
+        lbl_rpm["text"] = f'RPMs = {tach_counter * 30:d} rpm'
 
     GPIO.remove_event_detect(TACH_PIN)
     GPIO.cleanup()
@@ -64,8 +67,21 @@ if __name__ == "__main__":
     try:
         mywindow = tk.Tk()
         mywindow.title('Fan Control')
-        mywindow.geometry('400x300')
+        #mywindow.geometry('50x16+0+36')
+        tk.Label(text=f'Set Point = {DESIRED_TEMPERATURE:d}' + degree_sign + 'C', font=("Arial 14 bold")).pack()
+        global lbl_temperature
+        lbl_temperature = tk.Label(text="Temperature = 0", font=("Arial 14 bold"))
+        lbl_temperature.pack()
+        global lbl_duty_cycle
+        lbl_duty_cycle = tk.Label(text="Duty Cycle = 0", font=("Arial 14 bold"))
+        lbl_duty_cycle.pack()
+        global lbl_rpm
+        lbl_rpm = tk.Label(text="RPMs = 0", font=("Arial 14 bold"))
+        lbl_rpm.pack()
+        #tk.Button(text="quit", font=('Courier', 18), command=quit).pack()
+        #mywindow.overrideredirect(1)
         mywindow.mainloop()
+        print('Finished')
     except KeyboardInterrupt:
         print('Interrupted')
 
