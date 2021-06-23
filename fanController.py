@@ -8,6 +8,7 @@ import RPi.GPIO as GPIO
 from gpiozero import CPUTemperature
 from simple_pid import PID
 import configparser
+#from formattedSpinbox import FormattedSpinbox
 
 TACH_PIN = 17
 FAN_PWM_PIN = 18
@@ -23,7 +24,7 @@ kp = 10.0
 ki = 1.0
 kd = 0.5
 
-degree_sign = "℃"
+degree_sign = "℉"
 up_arrow = "▲"
 down_arrow = "▼"
 
@@ -42,7 +43,7 @@ def controlLoop():
     kp = getPidKValue('p')
     ki = getPidKValue('i')
     kd = getPidKValue('d')
-    print(f'kp = {kp}; ki = {ki}; kd = {kd}')
+    #print(f'kp = {kp}; ki = {ki}; kd = {kd}')
     pid = PID(-kp, -ki, -kd)  # use negative value sinces we want to have the reverse effect (i.e. cooling)
     pid.setpoint = desired_temperature
     pid.output_limits = (DUTY_CYCLE_MIN, DUTY_CYCLE_MAX)
@@ -65,7 +66,7 @@ def controlLoop():
         tach_counter = 0
 
         current_temperature = cpu.temperature
-        lbl_temperature["text"] = f'Temperature = {current_temperature:.2f}' + degree_sign
+        lbl_temperature["text"] = f'Temperature = {celsiusToFahrenheit(current_temperature):.2f}' + degree_sign
 
         pid.setpoint = desired_temperature
         fan_duty_cycle = pid(current_temperature)
@@ -95,7 +96,10 @@ def decrease():
     displaySetPoint(desired_temperature)
 
 def displaySetPoint(setpoint: int):
-    lbl_setpoint["text"] = f'Set Point = {setpoint:d}' + degree_sign
+    lbl_setpoint["text"] = f'Set Point = {celsiusToFahrenheit(setpoint):.0f}' + degree_sign
+
+def celsiusToFahrenheit(celsius: float) -> float:
+    return celsius * 1.8 + 32.0
 
 ini_file = './config.ini'
 choices = configparser.ConfigParser()
@@ -114,15 +118,21 @@ def getPidKValue(k_value:str) -> float:
     choices.read(ini_file)
     return choices.getfloat('configuration', 'k' + k_value)
 
+#def onSetPointChanged():
+#    global desired_temperature
+#    desired_temperature = int(current_setpoint.get())
+#    setSetPoint(desired_temperature)
+#    displaySetPoint(desired_temperature)
+
 if __name__ == "__main__":
     try:
         mywindow = tk.Tk()
         mywindow.title('Fan Control')
-        #mywindow.geometry('50x16+0+36')
+        mywindow.geometry('250x165')
 
         desired_temperature = getSetPoint()
         global lbl_setpoint
-        lbl_setpoint = tk.Label(text=f'Set Point = {desired_temperature:d}' + degree_sign, font=("Arial 14 bold"))
+        lbl_setpoint = tk.Label(text=f'Set Point = {celsiusToFahrenheit(desired_temperature):.0f}' + degree_sign, font=("Arial 14 bold"))
         lbl_setpoint.pack()
 
         btn_decrease = tk.Button(master=mywindow, text=down_arrow, command=decrease)
@@ -132,6 +142,12 @@ if __name__ == "__main__":
         btn_increase = tk.Button(master=mywindow, text=up_arrow, command=increase)
         #btn_increase.grid(row=0, column=2, sticky="nsew")
         btn_increase.pack()
+
+        #current_setpoint = tk.StringVar(value=desired_temperature)
+        #spb_setpoint = tk.Spinbox(mywindow, from_=0, to=100, textvariable=current_setpoint, command=onSetPointChanged, state='readonly')
+        #spb_setpoint = FormattedSpinbox(mywindow, from_=0, to=100, textvariable=current_setpoint, command=onSetPointChanged, state='readonly')
+        #spb_setpoint.set(0)
+        #spb_setpoint.pack()
 
         global lbl_temperature
         lbl_temperature = tk.Label(text="Temperature = 0", font=("Arial 14 bold"))
