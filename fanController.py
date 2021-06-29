@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 import threading
 import tkinter as tk
@@ -102,7 +102,7 @@ def displaySetPoint(setpoint: int):
 def celsiusToFahrenheit(celsius: float) -> float:
     return celsius * 1.8 + 32.0
 
-ini_file = './config.ini'
+ini_file = '/home/pi/Projects/Python/config.ini'
 choices = configparser.ConfigParser()
 
 def getSetPoint() -> int:
@@ -118,12 +118,6 @@ def setSetPoint(setpoint:int):
 def getPidKValue(k_value:str) -> float:
     choices.read(ini_file)
     return choices.getfloat('configuration', 'k' + k_value)
-
-#def onSetPointChanged():
-#    global desired_temperature
-#    desired_temperature = int(current_setpoint.get())
-#    setSetPoint(desired_temperature)
-#    displaySetPoint(desired_temperature)
 
 if __name__ == "__main__":
     try:
