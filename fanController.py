@@ -3,6 +3,7 @@
 import threading
 import tkinter as tk
 from time import monotonic, sleep
+from tkinter.constants import W
 
 import RPi.GPIO as GPIO
 from gpiozero import CPUTemperature
@@ -126,40 +127,34 @@ def getPidKValue(k_value:str) -> float:
 
 if __name__ == "__main__":
     try:
-        mywindow = tk.Tk()
-        mywindow.title('Fan Control')
-        mywindow.geometry('250x165')
+        root = tk.Tk()
+        root.title('Fan Control')
+        root.geometry('250x120')
+        frame = tk.Frame(root)
+        frame.grid(columnspan=3, rowspan=4, padx=7, pady=7)
 
         desired_temperature = getSetPoint()
         global lbl_setpoint
-        lbl_setpoint = tk.Label(text=f'Set Point = {celsiusToFahrenheit(desired_temperature):.0f}' + degree_sign, font=("Arial 14 bold"))
-        lbl_setpoint.pack()
+        lbl_setpoint = tk.Label(master=frame, text=f'Set Point = {celsiusToFahrenheit(desired_temperature):.0f}' + degree_sign, font=("Arial 14 bold"))
+        lbl_setpoint.grid(column=0, row=0, sticky="w")
 
-        btn_decrease = tk.Button(master=mywindow, text=down_arrow, command=decrease)
-        #btn_decrease.grid(row=0, column=0, sticky="nsew")
-        btn_decrease.pack()
+        btn_increase = tk.Button(master=frame, text=up_arrow, font=("Arial 8 bold"), height=1, width=1, command=increase)
+        btn_increase.grid(row=0, column=1, sticky="w", padx=(5,0))
 
-        btn_increase = tk.Button(master=mywindow, text=up_arrow, command=increase)
-        #btn_increase.grid(row=0, column=2, sticky="nsew")
-        btn_increase.pack()
-
-        #current_setpoint = tk.StringVar(value=desired_temperature)
-        #spb_setpoint = tk.Spinbox(mywindow, from_=0, to=100, textvariable=current_setpoint, command=onSetPointChanged, state='readonly')
-        #spb_setpoint = FormattedSpinbox(mywindow, from_=0, to=100, textvariable=current_setpoint, command=onSetPointChanged, state='readonly')
-        #spb_setpoint.set(0)
-        #spb_setpoint.pack()
+        btn_decrease = tk.Button(master=frame, text=down_arrow, font=("Arial 8 bold"), height=1, width=1, command=decrease)
+        btn_decrease.grid(row=0, column=2, sticky="w")
 
         global lbl_temperature
-        lbl_temperature = tk.Label(text="Temperature = 0", font=("Arial 14 bold"))
-        lbl_temperature.pack()
+        lbl_temperature = tk.Label(master=frame, text="Temperature = 0", font=("Arial 14 bold"))
+        lbl_temperature.grid(row=2, column=0, columnspan=3, sticky="w", pady=(5,0))
+
         global lbl_duty_cycle
-        lbl_duty_cycle = tk.Label(text="Duty Cycle = 0", font=("Arial 14 bold"))
-        lbl_duty_cycle.pack()
+        lbl_duty_cycle = tk.Label(master=frame, text="Duty Cycle = 0", font=("Arial 14 bold"))
+        lbl_duty_cycle.grid(row=3, column=0, columnspan=3, sticky="w")
+
         global lbl_rpm
-        lbl_rpm = tk.Label(text="Fan Running at 0 rpm", font=("Arial 14 bold"))
-        lbl_rpm.pack()
-        #tk.Button(text="quit", font=('Courier', 18), command=quit).pack()
-        #mywindow.overrideredirect(1)
+        lbl_rpm = tk.Label(master=frame, text="Fan Running at 0 rpm", font=("Arial 14 bold"))
+        lbl_rpm.grid(row=4, column=0, columnspan=3, sticky="w")
 
         # Start up the fan controller thread
         is_running = True
@@ -167,7 +162,7 @@ if __name__ == "__main__":
         controlLoopThread.start()
 
         # Start up the window's event loop...will not return until the window is closed
-        mywindow.mainloop()
+        root.mainloop()
         print('Exiting Mainloop')
     except KeyboardInterrupt:
         print('Interrupted')
