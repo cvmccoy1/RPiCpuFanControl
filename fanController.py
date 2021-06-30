@@ -3,7 +3,6 @@
 import threading
 import tkinter as tk
 from time import monotonic, sleep
-from tkinter.constants import W
 
 import RPi.GPIO as GPIO
 from gpiozero import CPUTemperature
@@ -25,7 +24,7 @@ kp = 10.0
 ki = 1.0
 kd = 0.5
 
-degree_sign = "℉"
+degree_sign = "℃"
 up_arrow = "▲"
 down_arrow = "▼"
 
@@ -44,7 +43,6 @@ def controlLoop():
     kp = getPidKValue('p')
     ki = getPidKValue('i')
     kd = getPidKValue('d')
-    #print(f'kp = {kp}; ki = {ki}; kd = {kd}')
     pid = PID(-kp, -ki, -kd)  # use negative value sinces we want to have the reverse effect (i.e. cooling)
     pid.setpoint = desired_temperature
     pid.output_limits = (DUTY_CYCLE_MIN, DUTY_CYCLE_MAX)
@@ -67,13 +65,13 @@ def controlLoop():
         tach_counter = 0
 
         current_temperature = cpu.temperature
-        lbl_temperature["text"] = f'Temperature = {celsiusToFahrenheit(current_temperature):.2f}' + degree_sign
+        displayTemperature(cpu.temperature)
 
         pid.setpoint = desired_temperature
         fan_duty_cycle = pid(current_temperature)
-        lbl_duty_cycle["text"] = f'Duty Cycle = {fan_duty_cycle:.0f}%'
+        displayFanDutyCycle(fan_duty_cycle)
         pwm.ChangeDutyCycle(fan_duty_cycle)
-        lbl_rpm["text"] = f'Fan Running at {current_tach_counter * 30:d} rpm'
+        displayFanRpm(current_tach_counter)
 
         sleep_time = 1.0 - (monotonic() - begin_time)
         sleep(sleep_time)
@@ -81,6 +79,18 @@ def controlLoop():
     GPIO.remove_event_detect(TACH_PIN)
     GPIO.cleanup()
     print("Exiting the Control Loop")
+
+def displayTemperature(temperature:float):
+    lbl_temperature["text"] = f'Temperature = {temperature:.0f}' + degree_sign
+
+def displayFanDutyCycle(duty_cycle:float):
+    lbl_duty_cycle["text"] = f'Duty Cycle = {duty_cycle:.0f}%'
+
+def displayFanRpm(tach_counter):
+    lbl_rpm["text"] = f'Fan Speed = {tach_counter * 30:d} rpm'
+
+def displaySetPoint(setpoint: int):
+    lbl_setpoint["text"] = f'Set Point = {setpoint:.0f}' + degree_sign
 
 def increase():
     global desired_temperature
@@ -95,12 +105,6 @@ def decrease():
         desired_temperature -= 1
         setSetPoint(desired_temperature)
     displaySetPoint(desired_temperature)
-
-def displaySetPoint(setpoint: int):
-    lbl_setpoint["text"] = f'Set Point = {celsiusToFahrenheit(setpoint):.0f}' + degree_sign
-
-def celsiusToFahrenheit(celsius: float) -> float:
-    return celsius * 1.8 + 32.0
 
 ini_file = '/home/pi/Projects/Python/config.ini'
 choices = configparser.ConfigParser()
@@ -129,8 +133,9 @@ if __name__ == "__main__":
 
         desired_temperature = getSetPoint()
         global lbl_setpoint
-        lbl_setpoint = tk.Label(master=frame, text=f'Set Point = {celsiusToFahrenheit(desired_temperature):.0f}' + degree_sign, font=("Arial 14 bold"))
+        lbl_setpoint = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_setpoint.grid(column=0, row=0, sticky="w")
+        displaySetPoint(desired_temperature)
 
         btn_increase = tk.Button(master=frame, text=up_arrow, font=("Arial 8 bold"), height=1, width=1, command=increase)
         btn_increase.grid(row=0, column=1, sticky="w", padx=(5,0))
@@ -139,15 +144,15 @@ if __name__ == "__main__":
         btn_decrease.grid(row=0, column=2, sticky="w")
 
         global lbl_temperature
-        lbl_temperature = tk.Label(master=frame, text="Temperature = 0", font=("Arial 14 bold"))
+        lbl_temperature = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_temperature.grid(row=2, column=0, columnspan=3, sticky="w", pady=(5,0))
 
         global lbl_duty_cycle
-        lbl_duty_cycle = tk.Label(master=frame, text="Duty Cycle = 0", font=("Arial 14 bold"))
+        lbl_duty_cycle = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_duty_cycle.grid(row=3, column=0, columnspan=3, sticky="w")
 
         global lbl_rpm
-        lbl_rpm = tk.Label(master=frame, text="Fan Running at 0 rpm", font=("Arial 14 bold"))
+        lbl_rpm = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_rpm.grid(row=4, column=0, columnspan=3, sticky="w")
 
         # Start up the fan controller thread
