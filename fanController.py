@@ -28,7 +28,7 @@ KP_DEFAULT = 10.0
 KI_DEFAULT = 1.0
 KD_DEFAULT = 0.5
 
-CONFIGURATION_FILE = "/home/pi/Projects/Python/config.ini"
+CONFIGURATION_FILE = "/usr/local/projects/RPiCpuFanControl/config.ini"
 config_parser = configparser.ConfigParser()
 
 degree_sign = "℃"
