@@ -1,0 +1,13 @@
+[Unit]
+Description=CPU Fan Controller
+After=network.target
+
+[Service]
+ExecStart=/usr/local/projects/RPiCpuFanControl/fanController.py
+WorkingDirectory=/usr/local/projects/RPiCpuFanControl
+Restart=always
+User=pi
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

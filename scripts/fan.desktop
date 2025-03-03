@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Fan Control
+Comment=System Fan Controller.
+GenericName=Fan Controller
+Exec=sudo /etc/init.d/fancontrol start
+Icon=/usr/share/pixmaps/fan64.png
+Type=Application
+Encoding=UTF-8
+Terminal=false
+Categories=None;
