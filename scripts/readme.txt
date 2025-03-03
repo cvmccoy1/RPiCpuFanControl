@@ -1,15 +1,18 @@
+cd ~/git
+gh repo clone cvmccoy1/RPiCpuFanControl
+
 1) Move the python code common folder
     sudo mkdir -p /usr/local/projects/RPiCpuFanControl
     sudo chmod 777 /usr/local/projects/
-    sudo ln -s ./*.py /usr/local/projects/RPiCpuFanControl/.
-    sudo ln -s ./config.ini /usr/local/projects/RPiCpuFanControl/.
+    sudo cp ./*.py /usr/local/projects/RPiCpuFanControl/.
+    sudo cp ./config.ini /usr/local/projects/RPiCpuFanControl/.
 
 2) Create a shortcut to the Fan Controller
      sudo cp ./images/fan*.png /usr/share/pixmaps/.
      sudo cp ./scripts/fan.desktop /home/pi/Desktop/.
      Set the option in File manager-->Edit-->Preferences-->General-->Do not ask option on executable launch
-4) sudo chmod 755 ./scrips/fancontrol
-5) sudo ln -s ./scripts/fancontrol /etc/init.d/. 
+4) sudo chmod 755 ./scripts/fancontrol
+5) sudo cp ./scripts/fancontrol /etc/init.d/. 
 
 ///// The first two options for autostart didn't work
 Do:
@@ -22,5 +25,5 @@ Or:
 11) sudo systemctl start fancontrol.service
 /////
 Or:
-4) sudo mkdir -p /home/pi/.config/autostart
-5) sudo cp /home/pi/Desktop/fan.desktop /home/pi/.config/autostart/.
+4) sudo mkdir -p ~/.config/autostart
+5) sudo cp ~/Desktop/fan.desktop ~/.config/autostart/.
