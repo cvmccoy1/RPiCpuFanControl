@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+from collections import deque
 
 import threading
 import tkinter as tk
@@ -82,8 +85,23 @@ def ControlLoop():
         pwm.ChangeDutyCycle(fan_duty_cycle)
         DisplayFanSpeed(current_tach_counter)
 
+        # Update the chart data
+        times.append(0)  # zero = now
+        temps.append(current_temperature)
+        duties.append(fan_duty_cycle)
+
+        # Update x values to show "seconds ago"
+        x_vals = list(range(-len(times)+1, 1))
+
+        line_temp.set_data(x_vals, temps)
+        line_duty.set_data(x_vals, duties)
+
+        chart_ax.set_xlim(min(x_vals), 0 if len(x_vals) > 1 else -1)
+        canvas_draw()
+
         sleep_time = PID_SAMPLE_TIME - (monotonic() - begin_time)
-        sleep(sleep_time)
+        if (sleep_time > 0):
+            sleep(sleep_time)
 
     GPIO.remove_event_detect(TACH_PIN)
     GPIO.cleanup()
@@ -129,14 +147,38 @@ def GetPidKValueFromConfigFile(k_value:str) -> float:
     config_parser.read(CONFIGURATION_FILE)
     return config_parser.getfloat('configuration', 'k' + k_value)
 
+def canvas_draw():
+    root.after(0, canvas.draw)
+
 if __name__ == "__main__":
     try:
         # Create and Populate the Main Window
         root = tk.Tk()
         root.title('Fan Control')
-        root.geometry('250x120')
+        root.geometry('420x380')
         frame = tk.Frame(root)
         frame.grid(columnspan=3, rowspan=4, padx=7, pady=7)
+
+        # Chart setup
+        chart_fig, chart_ax = plt.subplots(figsize=(4, 2.5))
+        chart_fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.2)
+        canvas = FigureCanvasTkAgg(chart_fig, master=frame)
+        canvas.get_tk_widget().grid(row=5, column=0, columnspan=3)
+
+        # Rolling data window
+        max_points = 60  # last 60 seconds
+        times = deque(maxlen=max_points)
+        temps = deque(maxlen=max_points)
+        duties = deque(maxlen=max_points)
+
+        line_temp, = chart_ax.plot([], [], label='CPU Temp (°C)', color='red')
+        line_duty, = chart_ax.plot([], [], label='Fan Duty (%)', color='blue')
+        chart_ax.set_ylim(0, 110)
+        chart_ax.set_xlim(0, max_points)
+        chart_ax.set_xlabel('Seconds Ago')
+        chart_ax.set_ylabel('Value')
+        chart_ax.legend()
+        chart_ax.grid(True)
 
         # Create the Setpoint label and Up/Down buttons
         desired_temperature = GetSetPointFromConfigFile()
@@ -145,11 +187,14 @@ if __name__ == "__main__":
         lbl_setpoint.grid(column=0, row=0, sticky="w")
         DisplaySetPoint(desired_temperature)
 
-        btn_increase = tk.Button(master=frame, text=up_arrow, font=("Arial 8 bold"), height=1, width=1, command=UpArrowClickedEvent)
-        btn_increase.grid(row=0, column=1, sticky="w", padx=(5,0))
+        btn_frame = tk.Frame(master=frame)
+        btn_frame.grid(row=0, column=1, columnspan=2)
 
-        btn_decrease = tk.Button(master=frame, text=down_arrow, font=("Arial 8 bold"), height=1, width=1, command=DownArrowClickedEvent)
-        btn_decrease.grid(row=0, column=2, sticky="w")
+        btn_increase = tk.Button(master=btn_frame, text=up_arrow, font=("Arial", 10), width=2, command=UpArrowClickedEvent)
+        btn_increase.pack(side="left", padx=(0, 5))
+
+        btn_decrease = tk.Button(master=btn_frame, text=down_arrow, font=("Arial", 10), width=2, command=DownArrowClickedEvent)
+        btn_decrease.pack(side="left")
 
         # Create the Current Temperature label
         global lbl_temperature
