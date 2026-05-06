@@ -186,17 +186,17 @@ if __name__ == "__main__":
 
         # Create the Setpoint label and Up/Down buttons
         desired_temperature = GetSetPointFromConfigFile()
-        lbl_setpoint = tk.Label(master=frame, font=("Arial 14 bold"))
-        lbl_setpoint.grid(column=0, row=0, sticky="w")
+        setpoint_frame = tk.Frame(master=frame)
+        setpoint_frame.grid(row=0, column=0, columnspan=3, sticky="w")
+
+        lbl_setpoint = tk.Label(master=setpoint_frame, font=("Arial 14 bold"))
+        lbl_setpoint.pack(side="left")
         DisplaySetPoint(desired_temperature)
 
-        btn_frame = tk.Frame(master=frame)
-        btn_frame.grid(row=0, column=1, columnspan=2)
+        btn_increase = tk.Button(master=setpoint_frame, text=up_arrow, font=("Arial", 10), width=2, command=UpArrowClickedEvent)
+        btn_increase.pack(side="left", padx=(10, 5))
 
-        btn_increase = tk.Button(master=btn_frame, text=up_arrow, font=("Arial", 10), width=2, command=UpArrowClickedEvent)
-        btn_increase.pack(side="left", padx=(0, 5))
-
-        btn_decrease = tk.Button(master=btn_frame, text=down_arrow, font=("Arial", 10), width=2, command=DownArrowClickedEvent)
+        btn_decrease = tk.Button(master=setpoint_frame, text=down_arrow, font=("Arial", 10), width=2, command=DownArrowClickedEvent)
         btn_decrease.pack(side="left")
 
         # Create the Current Temperature label
