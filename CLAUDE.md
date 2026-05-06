@@ -39,8 +39,11 @@ GPIO pin assignments (defined as module-level constants in `fanController.py`):
 `config.ini` (INI format, `[configuration]` section) stores:
 - `set_point` — target CPU temperature in °C
 - `kp`, `ki`, `kd` — PID gains
+- `window_geometry` — last window position/size (e.g. `420x380+100+200`), written on close and restored on startup
 
-The GUI writes updated setpoint values back to `config.ini` when the user presses the up/down buttons.
+The GUI writes updated setpoint values back to `config.ini` when the user presses the up/down buttons. Window geometry is saved via a `WM_DELETE_WINDOW` handler (`on_close`) that wraps the write in a `try/except` so the window always closes even if the save fails.
+
+**Important:** `config.ini` must be writable by the user running the app. After a `sudo cp` install, run `sudo chown pi:pi /usr/local/projects/RPiCpuFanControl/config.ini` — otherwise all config writes (setpoint, geometry) will silently fail and the X button will appear unresponsive.
 
 ## PID Control Design
 

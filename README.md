@@ -9,7 +9,7 @@ A Raspberry Pi CPU fan controller with a real-time GUI. It reads the CPU tempera
 Two threads run concurrently:
 
 - **Control loop** — runs every second, reads CPU temperature via `gpiozero`, computes a new duty cycle using a PID controller, applies a slew rate limit, writes the PWM signal to GPIO 18, and counts tachometer pulses on GPIO 17 to calculate RPM.
-- **GUI** — Tkinter window showing current temperature, duty cycle %, RPM, and a live Matplotlib chart. Up/Down buttons let you adjust the target setpoint, which is saved to `config.ini` immediately.
+- **GUI** — Tkinter window showing current temperature, duty cycle %, RPM, and a live Matplotlib chart. Up/Down buttons let you adjust the target setpoint, which is saved to `config.ini` immediately. Window position is saved on close and restored on the next startup.
 
 The PID is a reverse-acting controller — gains are negated so that temperature above the setpoint increases fan speed. Derivative is computed on the measurement rather than the error to avoid output spikes when the setpoint changes. Spin-down is rate-limited to 5%/sec for smooth fan transitions; spin-up is unrestricted for thermal safety.
 
@@ -46,9 +46,10 @@ set_point = 44   # target CPU temperature in °C
 kp = 5.0
 ki = 0.5
 kd = 0.5
+window_geometry = 420x380+100+200   # saved automatically on close
 ```
 
-The setpoint can also be adjusted live in the GUI.
+The setpoint can also be adjusted live in the GUI. `window_geometry` is written automatically when the app closes and read back on the next startup — no manual editing needed.
 
 ## Installation
 
@@ -62,6 +63,7 @@ sudo mkdir -p /usr/local/projects/RPiCpuFanControl
 sudo chmod 777 /usr/local/projects/
 sudo cp ./*.py /usr/local/projects/RPiCpuFanControl/
 sudo cp ./config.ini /usr/local/projects/RPiCpuFanControl/
+sudo chown pi:pi /usr/local/projects/RPiCpuFanControl/config.ini
 
 # Desktop icon
 sudo cp ./images/fan*.png /usr/share/pixmaps/
