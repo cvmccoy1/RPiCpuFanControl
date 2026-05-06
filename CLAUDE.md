@@ -11,13 +11,13 @@ RPiCpuFanControl is a Raspberry Pi CPU fan controller with a Tkinter GUI. It rea
 ```bash
 # Run directly (requires Raspberry Pi hardware and GPIO access)
 python3 fanController.py
-
-# Via systemd service
-sudo systemctl start fancontrol.service
-sudo systemctl status fancontrol.service
 ```
 
 There is no build step — this is a plain Python 3 application.
+
+## Autostart
+
+The app autostarts via `~/.config/autostart/fan.desktop` (desktop session autostart), which launches `fanController.py` directly when the Pi desktop loads. This is the correct approach for a GUI app — the systemd service (`fancontrol.service`) is intentionally disabled because system services run before a display is available.
 
 ## Installation
 

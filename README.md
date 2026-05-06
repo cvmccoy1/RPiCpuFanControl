@@ -66,17 +66,16 @@ sudo cp ./images/fan*.png /usr/share/pixmaps/
 sudo cp ./scripts/fan.desktop /home/pi/Desktop/
 ```
 
-## Autostart (systemd — recommended)
+## Autostart
+
+Because this is a GUI app, it autostarts via the desktop session rather than a systemd service (which runs before a display is available). Copy the desktop shortcut to the autostart folder:
 
 ```bash
-sudo cp ./scripts/fancontrol.service /etc/systemd/system/
-sudo chmod 755 /etc/systemd/system/fancontrol.service
-sudo systemctl daemon-reload
-sudo systemctl enable fancontrol.service
-sudo systemctl start fancontrol.service
+mkdir -p ~/.config/autostart
+cp /home/pi/Desktop/fan.desktop ~/.config/autostart/
 ```
 
-Check status: `sudo systemctl status fancontrol.service`
+The app will launch automatically each time the Pi desktop loads.
 
 ## Running manually
 
