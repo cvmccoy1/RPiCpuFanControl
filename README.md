@@ -2,6 +2,8 @@
 
 A Raspberry Pi CPU fan controller with a real-time GUI. It reads the CPU temperature, drives a PWM fan via GPIO, and displays live temperature, duty cycle, and RPM — along with a rolling 60-second chart.
 
+![Fan Control GUI](images/screenshot.png)
+
 ## How it works
 
 Two threads run concurrently:
@@ -43,7 +45,7 @@ sudo systemctl start pigpiod
 set_point = 44   # target CPU temperature in °C
 kp = 5.0
 ki = 0.5
-kd = 0.05
+kd = 0.5
 ```
 
 The setpoint can also be adjusted live in the GUI.

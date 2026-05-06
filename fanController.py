@@ -11,11 +11,10 @@ from gpiozero import CPUTemperature, PWMOutputDevice, Button
 from gpiozero.pins.pigpio import PiGPIOFactory
 from simple_pid import PID
 import configparser
-#from formattedSpinbox import FormattedSpinbox
 
 TACH_PIN = 17
 FAN_PWM_PIN = 18
-FAN_PWM_FEQUENCY = 1000
+FAN_PWM_FREQUENCY = 1000
 
 DESIRED_TEMPERATURE_DEFAULT = 35  # In celsius
 DESIRED_TEMPERATURE_MIN = 0
@@ -23,6 +22,7 @@ DESIRED_TEMPERATURE_MAX = 100
 
 DUTY_CYCLE_MIN = 0
 DUTY_CYCLE_MAX = 100
+SPIN_DOWN_SLEW_RATE = 5.0  # max % duty cycle decrease per second
 
 PID_SAMPLE_TIME = 1.0  # In seconds 
 
@@ -44,13 +44,13 @@ def ControlLoop():
     print("Starting the Control Loop")
     factory = PiGPIOFactory()
     tach = Button(TACH_PIN, pull_up=True, pin_factory=factory)
-    fan_pwm = PWMOutputDevice(FAN_PWM_PIN, frequency=FAN_PWM_FEQUENCY, pin_factory=factory)
+    fan_pwm = PWMOutputDevice(FAN_PWM_PIN, frequency=FAN_PWM_FREQUENCY, pin_factory=factory)
 
     # Set up the PID object
     kp = GetPidKValueFromConfigFile('p')
     ki = GetPidKValueFromConfigFile('i')
     kd = GetPidKValueFromConfigFile('d')
-    pid = PID(-kp, -ki, -kd)  # use negative value sinces we want to have the reverse effect (i.e. cooling)
+    pid = PID(-kp, -ki, -kd, differential_on_measurement=True)  # use negative value sinces we want to have the reverse effect (i.e. cooling)
     pid.setpoint = desired_temperature
     pid.output_limits = (DUTY_CYCLE_MIN, DUTY_CYCLE_MAX)
     pid.sample_time = PID_SAMPLE_TIME
@@ -66,6 +66,9 @@ def ControlLoop():
 
     tach.when_deactivated = _tach_pulse
 
+    last_setpoint = desired_temperature
+    previous_duty_cycle = DUTY_CYCLE_MIN
+
     global is_running
     while is_running:
         begin_time = monotonic()
@@ -73,10 +76,16 @@ def ControlLoop():
         tach_counter = 0
 
         current_temperature = cpu.temperature
-        DisplayTemperature(cpu.temperature)
+        DisplayTemperature(current_temperature)
 
-        pid.setpoint = desired_temperature
+        if desired_temperature != last_setpoint:
+            pid.setpoint = desired_temperature
+            last_setpoint = desired_temperature
+
         fan_duty_cycle = pid(current_temperature)
+        if fan_duty_cycle < previous_duty_cycle:
+            fan_duty_cycle = max(fan_duty_cycle, previous_duty_cycle - SPIN_DOWN_SLEW_RATE)
+        previous_duty_cycle = fan_duty_cycle
         DisplayFanDutyCycle(fan_duty_cycle)
         fan_pwm.value = fan_duty_cycle / 100
         DisplayFanSpeed(current_tach_counter)
@@ -134,10 +143,9 @@ def GetSetPointFromConfigFile() -> int:
     return config_parser.getint('configuration', 'set_point')
 
 def SetSetPointInConfigFile(setpoint:int):
-    config_file = open(CONFIGURATION_FILE, "w")
     config_parser.set('configuration', 'set_point', str(setpoint))
-    config_parser.write(config_file)
-    config_file.close()
+    with open(CONFIGURATION_FILE, "w") as config_file:
+        config_parser.write(config_file)
 
 def GetPidKValueFromConfigFile(k_value:str) -> float:
     config_parser.read(CONFIGURATION_FILE)
@@ -178,7 +186,6 @@ if __name__ == "__main__":
 
         # Create the Setpoint label and Up/Down buttons
         desired_temperature = GetSetPointFromConfigFile()
-        global lbl_setpoint
         lbl_setpoint = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_setpoint.grid(column=0, row=0, sticky="w")
         DisplaySetPoint(desired_temperature)
@@ -193,17 +200,14 @@ if __name__ == "__main__":
         btn_decrease.pack(side="left")
 
         # Create the Current Temperature label
-        global lbl_temperature
         lbl_temperature = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_temperature.grid(row=2, column=0, columnspan=3, sticky="w", pady=(5,0))
 
         # Create the Fan Duty Cycle label
-        global lbl_duty_cycle
         lbl_duty_cycle = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_duty_cycle.grid(row=3, column=0, columnspan=3, sticky="w")
 
         # Create the Fan Speed (RPM) label
-        global lbl_rpm
         lbl_rpm = tk.Label(master=frame, font=("Arial 14 bold"))
         lbl_rpm.grid(row=4, column=0, columnspan=3, sticky="w")
 
@@ -220,7 +224,8 @@ if __name__ == "__main__":
 
     # Stop the fan controller thread and wait for it to exit
     is_running = False
-    print('Waiting for Control Loop to Exit')
-    controlLoopThread.join(2.0)
+    if 'controlLoopThread' in dir():
+        print('Waiting for Control Loop to Exit')
+        controlLoopThread.join(2.0)
 
     print('Exiting Program')
