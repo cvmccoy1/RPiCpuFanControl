@@ -151,6 +151,15 @@ def GetPidKValueFromConfigFile(k_value:str) -> float:
     config_parser.read(CONFIGURATION_FILE)
     return config_parser.getfloat('configuration', 'k' + k_value)
 
+def GetGeometryFromConfigFile() -> str:
+    config_parser.read(CONFIGURATION_FILE)
+    return config_parser.get('configuration', 'window_geometry', fallback=None)
+
+def SaveGeometryToConfigFile(geometry: str):
+    config_parser.set('configuration', 'window_geometry', geometry)
+    with open(CONFIGURATION_FILE, "w") as config_file:
+        config_parser.write(config_file)
+
 def canvas_draw():
     root.after(0, canvas.draw)
 
@@ -159,7 +168,8 @@ if __name__ == "__main__":
         # Create and Populate the Main Window
         root = tk.Tk()
         root.title('Fan Control')
-        root.geometry('420x380')
+        root.geometry(GetGeometryFromConfigFile() or '420x380')
+        root.protocol("WM_DELETE_WINDOW", lambda: (SaveGeometryToConfigFile(root.geometry()), root.destroy()))
         frame = tk.Frame(root)
         frame.grid(columnspan=3, rowspan=4, padx=7, pady=7)
 
