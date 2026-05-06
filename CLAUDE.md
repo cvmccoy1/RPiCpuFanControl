@@ -46,9 +46,13 @@ The GUI writes updated setpoint values back to `config.ini` when the user presse
 
 Not in a requirements.txt; install manually:
 ```bash
-pip3 install matplotlib simple-pid RPi.GPIO gpiozero
+pip3 install matplotlib simple-pid gpiozero
+sudo apt-get install -y pigpiod
+sudo systemctl enable pigpiod && sudo systemctl start pigpiod
 ```
 `tkinter` and `configparser` are standard library.
+
+`pigpiod` is the GPIO backend used by `gpiozero` (via `PiGPIOFactory`). `RPi.GPIO` is not used — it breaks on kernel 6.x because `/proc/cpuinfo` no longer includes the `Hardware` field it requires for Pi detection.
 
 ## Key Files
 
