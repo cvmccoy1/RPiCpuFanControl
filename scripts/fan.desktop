@@ -2,7 +2,7 @@
 Name=Fan Control
 Comment=System Fan Controller.
 GenericName=Fan Controller
-Exec=sudo /etc/init.d/fancontrol start
+Exec=python3 /usr/local/projects/RPiCpuFanControl/fanController.py
 Icon=/usr/share/pixmaps/fan64.png
 Type=Application
 Encoding=UTF-8
