@@ -8,10 +8,10 @@ A Raspberry Pi CPU fan controller with a real-time GUI. It reads the CPU tempera
 
 Two threads run concurrently:
 
-- **Control loop** — runs every second, reads CPU temperature via `gpiozero`, computes a new duty cycle using a PID controller, writes the PWM signal to GPIO 18, and counts tachometer pulses on GPIO 17 to calculate RPM.
+- **Control loop** — runs every second, reads CPU temperature via `gpiozero`, computes a new duty cycle using a PID controller, applies a slew rate limit, writes the PWM signal to GPIO 18, and counts tachometer pulses on GPIO 17 to calculate RPM.
 - **GUI** — Tkinter window showing current temperature, duty cycle %, RPM, and a live Matplotlib chart. Up/Down buttons let you adjust the target setpoint, which is saved to `config.ini` immediately.
 
-The PID gains are negative so that a rising temperature increases fan speed (reverse-acting controller).
+The PID is a reverse-acting controller — gains are negated so that temperature above the setpoint increases fan speed. Derivative is computed on the measurement rather than the error to avoid output spikes when the setpoint changes. Spin-down is rate-limited to 5%/sec for smooth fan transitions; spin-up is unrestricted for thermal safety.
 
 ## Hardware
 
