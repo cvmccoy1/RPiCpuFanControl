@@ -7,8 +7,8 @@ import threading
 import tkinter as tk
 from time import monotonic, sleep
 
-import RPi.GPIO as GPIO
-from gpiozero import CPUTemperature
+from gpiozero import CPUTemperature, PWMOutputDevice, Button
+from gpiozero.pins.pigpio import PiGPIOFactory
 from simple_pid import PID
 import configparser
 #from formattedSpinbox import FormattedSpinbox
@@ -40,17 +40,12 @@ down_arrow = "▼"
 
 desired_temperature = DESIRED_TEMPERATURE_DEFAULT
 
-def TachFallingEdgeDetectedEvent(n):
-    global tach_counter
-    tach_counter += 1 
-
 def ControlLoop():
     print("Starting the Control Loop")
-    # Set up the GPIO Pins
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-    GPIO.setup(TACH_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    GPIO.setup(FAN_PWM_PIN, GPIO.OUT)
+    factory = PiGPIOFactory()
+    tach = Button(TACH_PIN, pull_up=True, pin_factory=factory)
+    fan_pwm = PWMOutputDevice(FAN_PWM_PIN, frequency=FAN_PWM_FEQUENCY, pin_factory=factory)
+
     # Set up the PID object
     kp = GetPidKValueFromConfigFile('p')
     ki = GetPidKValueFromConfigFile('i')
@@ -61,14 +56,15 @@ def ControlLoop():
     pid.sample_time = PID_SAMPLE_TIME
     # Set up the CPU Temperature object
     cpu = CPUTemperature()
-    # Set up PWM on the Fan Pin
-    pwm = GPIO.PWM(FAN_PWM_PIN, FAN_PWM_FEQUENCY)
-    pwm.start(0)
 
     global tach_counter
-    tach_counter = 0  
-    # Attach the Tach Falling Edge Event method
-    GPIO.add_event_detect(TACH_PIN, GPIO.FALLING, TachFallingEdgeDetectedEvent)
+    tach_counter = 0
+
+    def _tach_pulse():
+        global tach_counter
+        tach_counter += 1
+
+    tach.when_deactivated = _tach_pulse
 
     global is_running
     while is_running:
@@ -82,7 +78,7 @@ def ControlLoop():
         pid.setpoint = desired_temperature
         fan_duty_cycle = pid(current_temperature)
         DisplayFanDutyCycle(fan_duty_cycle)
-        pwm.ChangeDutyCycle(fan_duty_cycle)
+        fan_pwm.value = fan_duty_cycle / 100
         DisplayFanSpeed(current_tach_counter)
 
         # Update the chart data
@@ -103,8 +99,8 @@ def ControlLoop():
         if (sleep_time > 0):
             sleep(sleep_time)
 
-    GPIO.remove_event_detect(TACH_PIN)
-    GPIO.cleanup()
+    tach.close()
+    fan_pwm.close()
     print("Exiting the Control Loop")
 
 def DisplayTemperature(temperature:float):
