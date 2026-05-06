@@ -23,7 +23,15 @@ PWM frequency: 1 kHz
 ## Dependencies
 
 ```bash
-pip3 install matplotlib simple-pid RPi.GPIO gpiozero
+pip3 install matplotlib simple-pid gpiozero
+```
+
+`pigpiod` is required as the GPIO backend (supports kernel 6.x, unlike `RPi.GPIO`):
+
+```bash
+sudo apt-get install -y pigpiod
+sudo systemctl enable pigpiod
+sudo systemctl start pigpiod
 ```
 
 ## Configuration
