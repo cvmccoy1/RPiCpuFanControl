@@ -15,6 +15,7 @@ cd RPiCpuFanControl
     sudo chmod 777 /usr/local/projects/
     sudo cp ./*.py /usr/local/projects/RPiCpuFanControl/.
     sudo cp ./config.ini /usr/local/projects/RPiCpuFanControl/.
+    sudo chown pi:pi /usr/local/projects/RPiCpuFanControl/config.ini
 
 4) Install desktop shortcut and icon
     sudo cp ./images/fan*.png /usr/share/pixmaps/.

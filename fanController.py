@@ -169,7 +169,15 @@ if __name__ == "__main__":
         root = tk.Tk()
         root.title('Fan Control')
         root.geometry(GetGeometryFromConfigFile() or '420x380')
-        root.protocol("WM_DELETE_WINDOW", lambda: (SaveGeometryToConfigFile(root.geometry()), root.destroy()))
+
+        def on_close():
+            try:
+                SaveGeometryToConfigFile(root.geometry())
+            except Exception as e:
+                print(f'Warning: could not save window geometry: {e}')
+            root.destroy()
+
+        root.protocol("WM_DELETE_WINDOW", on_close)
         frame = tk.Frame(root)
         frame.grid(columnspan=3, rowspan=4, padx=7, pady=7)
 
